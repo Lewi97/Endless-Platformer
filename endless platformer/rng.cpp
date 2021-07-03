@@ -1,5 +1,5 @@
 #include "rng.h"
-
+// thank hopson97 for this :)
 #include <ctime>
 
 rng& rng::get()

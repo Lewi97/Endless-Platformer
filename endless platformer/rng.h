@@ -1,5 +1,5 @@
 #pragma once
-
+// thank hopson97 for this :)
 #include <random>
 
 class rng

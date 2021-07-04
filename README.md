@@ -4,7 +4,7 @@ Simple game where you(green square) try to climb as high as possible before the 
 
 ![Dying](Screenshots/screenshot1.png)
 
-Scary meteors to make it even more unfair!
+Meteors!
 
 ![Meteor](Screenshots/meteors.png)
 

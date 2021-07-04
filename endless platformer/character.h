@@ -29,6 +29,7 @@ public:
 	// setter
 	bool falling = false;
 	void setPos(sf::Vector2f pos) { body.setPosition(pos); }
+	void stopJumping() { jumping = false; }
 
 	// getters
 	bool isJumping()		{ return jumping;				}

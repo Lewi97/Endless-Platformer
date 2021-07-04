@@ -6,6 +6,7 @@
 #include "platform.h"
 #include "rng.h"
 #include "Lava.h"
+#include "meteor.h"
 
 #define LOG(x) std::cout << x << std::endl;
 
@@ -16,6 +17,7 @@ constexpr float platformSpacing = { 75 };
 
 int main()
 {
+	void resetEntities();
 	sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "main");
 	sf::Event event;
 	sf::View view(sf::FloatRect(0.f, 0.f, 800.f, 600.f));
@@ -38,6 +40,10 @@ int main()
 	std::vector<platform> platforms;
 	platforms.reserve(19);
 	
+	// initializing meteors vector
+	std::vector<meteor> meteors;
+	platforms.reserve(4);
+
 	sf::Clock dt;
 	float delta = 0.f;
 	sf::Vector2f velocity;
@@ -61,7 +67,7 @@ int main()
 	Lava lava({ windowWidth, windowHeight }, { lavaStartPos } );
 	lava.setRise(riseSpeed);
 
-	float prevOffset = player.getPos().x;
+	float prevOffset = 0.f;
 	float goal = player.getPos().y + platformSpacing / 2;
 	view.setCenter(player.getPos());
 
@@ -110,9 +116,10 @@ int main()
 		if (player.getPos().y <= (goal + platformSpacing * 4)) 
 		{
 			for (int x = 0; x < 8; x++) {
-				float offset = rng::get().floatInRange(-90, 90);
+				int mod = rng::get().intInRange( 1,2) > 1 ? -1 : 1;			// create negative or positive number
+				float offset = (rng::get().floatInRange(0, 45) + 45) * mod; // platform will now be spaced atleast 45 pixels away 
 				platform plat({ 100.f,10.f }, { windowWidth / 2 - (prevOffset + offset), goal });
-				if (platforms.size() > 16) // if more than 16 platforms, remove the first, maybe better performance wise to just move the oldest 8 platforms up, but how to determine oldest
+				if (platforms.size() > 16) // if more than 16 platforms, remove the first, maybe better to just move the oldest 8 platforms up, but how to determine oldest
 				{
 					platforms.erase(platforms.begin());
 				}
@@ -120,14 +127,14 @@ int main()
 				goal -= platformSpacing;
 				prevOffset = offset;
 			}
+			int meteor_rad = rng::get().intInRange(10, 25);
+			int meteor_speed = rng::get().intInRange(50, 250);
+			meteor Meteor(meteor_rad, {player.getPos().x , goal}, meteor_speed);
+			if (meteors.size() > 1) meteors.erase(meteors.begin());
+			meteors.emplace_back(Meteor);
 			// lava.increaseRise(riseSpeed);
 		}
 
-		for (auto plat : platforms)
-		{
-			// render the platform
-			plat.render(window);
-		}
 
 		for (auto& plat : platforms)
 		{
@@ -135,7 +142,7 @@ int main()
 			// collision checks, fall if not atleast touching one platform
 			if (plat.isColliding(player.getSize(), player.getPos()))
 			{
-				//if (plat.touched) { score += 1; plat.touched = true; scoreText.setString(std::to_string(score)); }
+				//if (plat.touched) { score += 1; plat.touched = false; scoreText.setString(std::to_string(score)); }
 				score += plat.touched;
 				plat.touched -= plat.touched;
 				scoreText.setString(std::to_string(score));
@@ -155,6 +162,8 @@ int main()
 			plat.setColor(sf::Color::Blue);
 			platforms.emplace_back(plat);
 			score = 0;
+			player.stopJumping();
+			meteors.clear();
 		}
 
 		// If the player gets too far from the lava, place lava at bottom of the screen for extra tension :)
@@ -171,6 +180,27 @@ int main()
 
 		// using the booleans to mooveleans
 		velocity = { (float)right - (float)left, 0.f };
+		
+		// render the platform and meteors
+		for (auto plat : platforms) plat.render(window);
+		for (auto& m : meteors)
+		{
+			m.render(window); m.update(delta); 
+			if (m.isColliding(player.getPos(), player.getSize()))
+			{ // should really make dying into a function
+				platforms.clear();
+				player.setPos(playerStartPos);
+				lava.setPos(lavaStartPos.y);
+				goal = player.getPos().y + platformSpacing / 2;
+				platform plat({ 100.f,100.f }, { windowWidth / 2, windowHeight / 2 + 50.f });
+				plat.setColor(sf::Color::Blue);
+				platforms.emplace_back(plat);
+				score = 0;
+				meteors.clear();
+				player.stopJumping();
+				break;
+			}
+		}
 
 		lava.update(delta);
 

@@ -148,12 +148,14 @@
     <ClCompile Include="character.cpp" />
     <ClCompile Include="Lava.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="meteor.cpp" />
     <ClCompile Include="platform.cpp" />
     <ClCompile Include="rng.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="character.h" />
     <ClInclude Include="Lava.h" />
+    <ClInclude Include="meteor.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="rng.h" />
   </ItemGroup>

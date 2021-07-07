@@ -15,9 +15,21 @@ constexpr int windowHeight = { 600 };
 constexpr float riseSpeed = { 120 };
 constexpr float platformSpacing = { 75 }; 
 
+void initPlatforms(float& goal, std::vector<platform>& platforms)
+{
+	float prevOffset = 0.f;
+	for (int x = 0; x < 11; x++) {
+		int mod = rng::get().intInRange(1, 2) > 1 ? -1 : 1;			// create negative or positive number
+		float offset = (rng::get().floatInRange(0, 45) + 45) * mod; // platform will now be spaced atleast 45 pixels away 
+		platforms[x].setPos({ windowWidth / 2 - (prevOffset + offset), goal });
+		platforms[x].touched = true;
+		goal -= platformSpacing;
+		prevOffset = offset;
+	}
+}
+
 int main()
 {
-	void resetEntities();
 	sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "main");
 	sf::Event event;
 	sf::View view(sf::FloatRect(0.f, 0.f, 800.f, 600.f));
@@ -36,10 +48,30 @@ int main()
 	scoreText.setFont(font);
 	scoreText.setFillColor(sf::Color::White);
 
+	// initializing player
+	character player({ playerStartPos }, 150, sf::Color::Green);
+
+	// initializing the first big blue platform
+	platform plat({ 100.f,10.f }, { windowWidth / 2, windowHeight / 2 + 50.f });
+	plat.setColor(sf::Color::Blue);
+
 	// initializing platforms vector and reserving a space for 19 elements
 	std::vector<platform> platforms;
 	platforms.reserve(19);
-	
+	platforms.emplace_back(plat);
+
+	float prevOffset = 0.f;
+	float goal = player.getPos().y + platformSpacing / 2;
+
+	for (int x = 0; x < 11; x++) {
+		int mod = rng::get().intInRange(1, 2) > 1 ? -1 : 1;			// create negative or positive number
+		float offset = (rng::get().floatInRange(0, 45) + 45) * mod; // platform will now be spaced atleast 45 pixels away 
+		platform plat({ 100.f,10.f }, { windowWidth / 2 - (prevOffset + offset), goal });
+		platforms.emplace_back(plat);
+		goal -= platformSpacing;
+		prevOffset = offset;
+	}
+
 	// initializing meteors vector
 	std::vector<meteor> meteors;
 	platforms.reserve(4);
@@ -48,18 +80,15 @@ int main()
 	float delta = 0.f;
 	sf::Vector2f velocity;
 
+	// keeping track which 4 platforms are current in line of updating to a higher position
+	int current = 0;
+
 	// player movement booleans
 	bool right = false, left = false;
 	bool inAir = false;
 	bool spaceHeld = false;
 
-	// initializing the first big blue platform
-	platform plat({ 100.f,100.f }, { windowWidth / 2, windowHeight / 2 + 50.f });
-	plat.setColor(sf::Color::Blue);
-	platforms.emplace_back(plat);
-
-	// player initialization
-	character player({ playerStartPos },150,sf::Color::Green);
+	// stat initialization
 	float jumpStrength = 100;
 	int score = 0;
 
@@ -67,14 +96,12 @@ int main()
 	Lava lava({ windowWidth, windowHeight }, { lavaStartPos } );
 	lava.setRise(riseSpeed);
 
-	float prevOffset = 0.f;
-	float goal = player.getPos().y + platformSpacing / 2;
 	view.setCenter(player.getPos());
 
 	while (window.isOpen()) {
 	// get delta time
 	delta = dt.restart().asSeconds();
-
+	// LOG(delta);
 	// window and ui stuff
 	window.setView(view);
 	view.setCenter({ windowWidth / 2, player.getPos().y });
@@ -113,20 +140,22 @@ int main()
 			if (!player.isJumping() && !inAir) player.jump(jumpStrength);
 		}
 
-		if (player.getPos().y <= (goal + platformSpacing * 4)) 
+		if (player.getPos().y <= goal + platformSpacing * 4)
 		{
-			for (int x = 0; x < 8; x++) {
-				int mod = rng::get().intInRange( 1,2) > 1 ? -1 : 1;			// create negative or positive number
+			for (int i = 0; i < 4; i++)
+			{
+				int mod = rng::get().intInRange(1, 2) > 1 ? -1 : 1;			// create negative or positive number
 				float offset = (rng::get().floatInRange(0, 45) + 45) * mod; // platform will now be spaced atleast 45 pixels away 
-				platform plat({ 100.f,10.f }, { windowWidth / 2 - (prevOffset + offset), goal });
-				if (platforms.size() > 16) // if more than 16 platforms, remove the first, maybe better to just move the oldest 8 platforms up, but how to determine oldest
-				{
-					platforms.erase(platforms.begin());
-				}
-				platforms.emplace_back(plat);
-				goal -= platformSpacing;
+
+				platforms[current].setPos({ windowWidth / 2 - (prevOffset + offset), goal });
+				platforms[current].touched = true;
+
+				current += 1;
 				prevOffset = offset;
+				goal -= platformSpacing;
 			}
+			if (current > 11) { current = 0; }
+
 			int meteor_rad = rng::get().intInRange(10, 25);
 			int meteor_speed = rng::get().intInRange(50, 250);
 			meteor Meteor(meteor_rad, {player.getPos().x , goal}, meteor_speed);
@@ -134,7 +163,6 @@ int main()
 			meteors.emplace_back(Meteor);
 			// lava.increaseRise(riseSpeed);
 		}
-
 
 		for (auto& plat : platforms)
 		{
@@ -154,13 +182,12 @@ int main()
 		
 		if (lava.getPosition() < player.getPos().y) // dying, should be able to do this in a better way
 		{
-			platforms.clear();
+			current = 0;
 			player.setPos(playerStartPos);
 			lava.setPos(lavaStartPos.y);
 			goal = player.getPos().y + platformSpacing / 2;
-			platform plat({ 100.f,100.f }, { windowWidth / 2, windowHeight / 2 + 50.f });
-			plat.setColor(sf::Color::Blue);
-			platforms.emplace_back(plat);
+			initPlatforms(goal, platforms);
+			platforms[0].setPos({ windowWidth / 2, windowHeight / 2 + 50.f });
 			score = 0;
 			player.stopJumping();
 			meteors.clear();
@@ -188,16 +215,15 @@ int main()
 			m.render(window); m.update(delta); 
 			if (m.isColliding(player.getPos(), player.getSize()))
 			{ // should really make dying into a function
-				platforms.clear();
+				current = 0;
 				player.setPos(playerStartPos);
 				lava.setPos(lavaStartPos.y);
 				goal = player.getPos().y + platformSpacing / 2;
-				platform plat({ 100.f,100.f }, { windowWidth / 2, windowHeight / 2 + 50.f });
-				plat.setColor(sf::Color::Blue);
-				platforms.emplace_back(plat);
+				initPlatforms(goal, platforms);
+				platforms[0].setPos({ windowWidth / 2, windowHeight / 2 + 50.f });
 				score = 0;
-				meteors.clear();
 				player.stopJumping();
+				meteors.clear();
 				break;
 			}
 		}

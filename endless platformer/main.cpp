@@ -42,11 +42,19 @@ int main()
 	sf::Font font;
 	if (!font.loadFromFile("PressStart2P.ttf"))
 	{
-		LOG("error");
+		LOG("Font failed to load!");
 	}
 
 	scoreText.setFont(font);
 	scoreText.setFillColor(sf::Color::White);
+	
+	sf::Shader shader;
+	if (!shader.loadFromFile("lavashader.frag", sf::Shader::Fragment))
+	{
+		LOG("Shader failed to load!");
+	}
+	shader.setUniform("u_resolution", sf::Glsl::Vec2(windowWidth,windowHeight));
+	sf::Clock shader_clock;
 
 	// initializing player
 	character player({ playerStartPos }, 150, sf::Color::Green);
@@ -99,14 +107,16 @@ int main()
 	view.setCenter(player.getPos());
 
 	while (window.isOpen()) {
-	// get delta time
-	delta = dt.restart().asSeconds();
-	// LOG(delta);
-	// window and ui stuff
-	window.setView(view);
-	view.setCenter({ windowWidth / 2, player.getPos().y });
+		// get delta time
+		delta = dt.restart().asSeconds();
+		// LOG(delta);
+		// window and ui stuff
+		window.setView(view);
+		view.setCenter({ windowWidth / 2, player.getPos().y });
 
-	scoreText.setPosition(sf::Vector2f(windowWidth / 2 - scoreText.getGlobalBounds().width / 2, player.getPos().y + scoreText.getGlobalBounds().height - windowHeight / 2)); // math course to center text at top of screen
+		scoreText.setPosition(sf::Vector2f(windowWidth / 2 - scoreText.getGlobalBounds().width / 2, player.getPos().y + scoreText.getGlobalBounds().height - windowHeight / 2)); // math course to center text at top of screen
+
+		shader.setUniform("u_time", shader_clock.getElapsedTime().asSeconds());
 
 		while (window.pollEvent(event))
 		{
@@ -230,7 +240,7 @@ int main()
 
 		lava.update(delta);
 
-		lava.render(window);
+		lava.render(window, shader);
 
 		player.move(velocity.x * delta);
 		

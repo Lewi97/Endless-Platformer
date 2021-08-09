@@ -12,7 +12,7 @@ public:
 	Lava(sf::Vector2f size, sf::Vector2f position);
 
 	// renderer
-	void render(sf::RenderTarget& window) { window.draw(lavaShape); }
+	void render(sf::RenderTarget& window, sf::Shader& shader) { window.draw(lavaShape, &shader); }
 
 	// update
 	void update(float delta);

@@ -7,10 +7,8 @@ uniform float u_time;
 
 void main() {
     vec2 p = gl_FragCoord.xy / u_resolution.xy;
-    
-    vec3 color = vec3(.0);
 
-    color = vec3(1.,.3,.0);
+    vec3 color = vec3(1.,.3,.0);
 
     color.g += (sin(p.y-u_time)/2.);
 
